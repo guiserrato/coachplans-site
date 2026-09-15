@@ -39,7 +39,10 @@
       --cp-panel-strong: rgba(255, 255, 255, 0.96);
       --cp-sheen: rgba(255, 255, 255, 0.55);
       --cp-highlight: rgba(177, 31, 75, 0.12);
-      --cp-team-frame: #f4cade;
+      --cp-team-frame: #111111;
+      --cp-team-border: #ff2e95;
+      --cp-team-on-frame: #ffffff;
+      --cp-team-logo-surface: #fff1de;
     }
     html[data-theme="dark"] {
       color-scheme: dark;
@@ -66,7 +69,10 @@
       --cp-panel-strong: rgba(41, 41, 41, 0.96);
       --cp-sheen: rgba(255, 255, 255, 0.04);
       --cp-highlight: rgba(253, 142, 161, 0.12);
-      --cp-team-frame: #4b2939;
+      --cp-team-frame: #080808;
+      --cp-team-border: #ff5eaa;
+      --cp-team-on-frame: #ffffff;
+      --cp-team-logo-surface: #fff1de;
     }
     * { box-sizing: border-box; }
     body {
@@ -79,7 +85,7 @@
     button, input { font: inherit; }
     button { cursor: pointer; }
     a { color: var(--cp-link); }
-    .shell { width: min(100% - 24px, 920px); margin: 0 auto; padding: 20px 0 48px; }
+    .shell { width: min(calc(100% - 24px), 920px); margin: 0 auto; padding: 20px 0 48px; }
     .topbar {
       display: flex;
       align-items: center;
@@ -88,23 +94,35 @@
       margin-bottom: 16px;
       padding: 10px 12px;
       background: var(--cp-panel-strong);
-      border: 1px solid var(--cp-border);
+      border: 2px solid var(--cp-team-border);
       border-radius: 16px;
       box-shadow: 0 0 2px var(--cp-border), 0 1px 2px var(--cp-border);
     }
     .topbar h1 { flex: 1; margin: 0; font-size: clamp(1.25rem, 5vw, 1.75rem); }
-    .team-logo {
+    .team-logo-tile {
       width: 54px;
       height: 54px;
       flex: 0 0 auto;
-      object-fit: contain;
-      background: var(--cp-surface);
-      border: 1px solid var(--cp-border);
+      background: var(--cp-team-logo-surface);
+      border: 2px solid var(--cp-team-border);
       border-radius: 0.625rem;
+      display: grid;
+      place-items: center;
+      padding: 2px;
+      overflow: hidden;
+    }
+    .team-logo {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+    }
+    body[data-team="golden-warriors"] .team-logo {
+      filter: brightness(0);
     }
     .card {
       background: var(--cp-surface);
-      border: 1px solid var(--cp-border);
+      border: 2px solid var(--cp-team-border);
       border-radius: 16px;
       box-shadow: 0 0 2px var(--cp-border), 0 1px 2px var(--cp-border);
       padding: clamp(18px, 5vw, 32px);
@@ -148,13 +166,24 @@
       text-align: left;
       color: var(--cp-text);
       background: var(--cp-surface);
-      border: 1px solid var(--cp-border);
+      border: 2px solid var(--cp-team-border);
       border-radius: 0.625rem;
       padding: 16px;
     }
     .plan:hover { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
     .plan strong { display: block; font-size: 1.05rem; }
     .plan span { color: var(--cp-text-muted); }
+    .year {
+      color: var(--cp-team-on-frame);
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--cp-team-border);
+    }
+    .plan:hover {
+      color: var(--cp-team-on-frame);
+      background: var(--cp-team-frame);
+      border-color: var(--cp-team-border);
+    }
+    .plan:hover span { color: var(--cp-team-border); }
     .document h1 { margin-top: 0; line-height: 1.2; }
     .document h2 { margin-top: 2rem; padding-bottom: 6px; border-bottom: 1px solid var(--cp-border); }
     .document h3 { margin-top: 1.5rem; }
@@ -176,14 +205,14 @@
     .unavailable-link { color: var(--cp-text-muted); }
     .hidden { display: none !important; }
     @media (max-width: 560px) {
-      .shell { width: min(100% - 16px, 920px); padding-top: 8px; }
+      .shell { width: min(calc(100% - 16px), 920px); padding-top: 8px; }
       .topbar { position: sticky; top: 4px; z-index: 2; }
-      .team-logo { width: 44px; height: 44px; }
+      .team-logo-tile { width: 44px; height: 44px; }
       .card { padding: 18px; }
     }
   </style>
 </head>
-<body>
+<body data-team="panthers">
   <main class="shell">
     <section id="unlock" class="card unlock">
       <h1>Panthers practice plans</h1>
@@ -201,7 +230,9 @@
     <section id="app" class="hidden">
       <header class="topbar">
         <button id="home-button" class="secondary hidden" type="button">Back</button>
-        <img id="team-logo" class="team-logo hidden" alt="Panthers logo">
+        <span class="team-logo-tile">
+          <img id="team-logo" class="team-logo hidden" alt="Panthers logo">
+        </span>
         <h1 id="team-name">Panthers</h1>
         <button id="lock-button" class="secondary" type="button">Lock</button>
       </header>
