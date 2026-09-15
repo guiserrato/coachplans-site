@@ -8,8 +8,12 @@
   <script>
     (() => {
       const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      let saved = "";
+      try {
+        saved = localStorage.getItem("coachplans:theme") || "";
+      } catch {}
       const theme =
-        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        param || saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
       document.documentElement.setAttribute("data-theme", theme);
     })();
   </script>
@@ -156,6 +160,9 @@
       background: var(--cp-surface);
       border: 1px solid var(--cp-border);
     }
+    .secondary:disabled { cursor: default; opacity: 0.42; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .week-navigation { display: flex; gap: 8px; }
     .error { min-height: 24px; color: var(--cp-danger); margin-top: 12px; }
     .muted { color: var(--cp-text-muted); }
     .year { margin: 28px 0 12px; font-size: 1.15rem; }
@@ -208,6 +215,11 @@
       .shell { width: min(calc(100% - 16px), 920px); padding-top: 8px; }
       .topbar { position: sticky; top: 4px; z-index: 2; }
       .team-logo-tile { width: 44px; height: 44px; }
+      .topbar { flex-wrap: wrap; }
+      .topbar h1 { min-width: calc(100% - 140px); }
+      .header-actions { margin-left: auto; }
+      .week-navigation { width: 100%; order: 3; }
+      .week-navigation .secondary { flex: 1; padding-inline: 8px; }
       .card { padding: 18px; }
     }
   </style>
@@ -229,12 +241,18 @@
 
     <section id="app" class="hidden">
       <header class="topbar">
-        <button id="home-button" class="secondary hidden" type="button">Back</button>
         <span class="team-logo-tile">
           <img id="team-logo" class="team-logo hidden" alt="Panthers logo">
         </span>
         <h1 id="team-name">Panthers</h1>
-        <button id="lock-button" class="secondary" type="button">Lock</button>
+        <div class="header-actions">
+          <button id="theme-button" class="secondary" type="button">Dark mode</button>
+        </div>
+        <nav id="week-navigation" class="week-navigation hidden" aria-label="Week navigation">
+          <button id="previous-button" class="secondary" type="button">Previous</button>
+          <button id="home-button" class="secondary" type="button">Home</button>
+          <button id="next-button" class="secondary" type="button">Next</button>
+        </nav>
       </header>
       <div id="content"></div>
     </section>
@@ -248,29 +266,24 @@
     const passwordInput = document.getElementById("password");
     const error = document.getElementById("error");
     const content = document.getElementById("content");
+    const weekNavigation = document.getElementById("week-navigation");
     const homeButton = document.getElementById("home-button");
-    const lockButton = document.getElementById("lock-button");
+    const previousButton = document.getElementById("previous-button");
+    const nextButton = document.getElementById("next-button");
+    const themeButton = document.getElementById("theme-button");
     const teamLogo = document.getElementById("team-logo");
     let payload = null;
     let activeSecret = "";
+    let activePlanId = "";
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       await unlockWith(passwordInput.value);
     });
     homeButton.addEventListener("click", showHome);
-    lockButton.addEventListener("click", () => {
-      sessionStorage.removeItem(storageKey);
-      payload = null;
-      activeSecret = "";
-      teamLogo.removeAttribute("src");
-      teamLogo.classList.add("hidden");
-      content.replaceChildren();
-      app.classList.add("hidden");
-      unlock.classList.remove("hidden");
-      passwordInput.value = "";
-      passwordInput.focus();
-    });
+    previousButton.addEventListener("click", () => showAdjacentPlan(-1));
+    nextButton.addEventListener("click", () => showAdjacentPlan(1));
+    themeButton.addEventListener("click", toggleTheme);
     content.addEventListener("click", (event) => {
       const documentLink = event.target.closest("[data-doc]");
       if (documentLink) {
@@ -282,6 +295,7 @@
       if (planButton) void showDocument(planButton.dataset.plan);
     });
 
+    updateThemeButton();
     start();
 
     async function start() {
@@ -309,7 +323,12 @@
         if (removeFragment) history.replaceState(null, "", location.pathname + location.search);
         unlock.classList.add("hidden");
         app.classList.remove("hidden");
-        showHome();
+        const requestedPlan = new URLSearchParams(location.search).get("plan");
+        if (requestedPlan && payload.plans.some((plan) => plan.id === requestedPlan)) {
+          await showDocument(requestedPlan);
+        } else {
+          showHome();
+        }
       } catch {
         payload = null;
         activeSecret = "";
@@ -322,8 +341,10 @@
     }
 
     function showHome() {
-      homeButton.classList.add("hidden");
-      document.getElementById("team-name").textContent = `${payload.team.name} plans`;
+      activePlanId = "";
+      weekNavigation.classList.add("hidden");
+      document.getElementById("team-name").textContent = payload.team.name;
+      setPlanQuery("");
       const wrapper = document.createElement("div");
       const years = new Map();
       for (const plan of payload.plans) {
@@ -343,10 +364,8 @@
           button.className = "plan";
           button.dataset.plan = plan.id;
           const title = document.createElement("strong");
-          title.textContent = plan.title;
-          const detail = document.createElement("span");
-          detail.textContent = `Week ${plan.week}`;
-          button.append(title, detail);
+          title.textContent = `Week ${plan.week}`;
+          button.append(title);
           grid.append(button);
         }
         wrapper.append(grid);
@@ -358,8 +377,14 @@
     async function showDocument(id, anchor = "") {
       const metadata = payload.documents[id];
       if (!metadata) return;
-      homeButton.classList.remove("hidden");
-      document.getElementById("team-name").textContent = metadata.title;
+      const plan = payload.plans.find((candidate) => candidate.id === id);
+      activePlanId = plan ? id : "";
+      weekNavigation.classList.remove("hidden");
+      previousButton.classList.toggle("hidden", !plan);
+      nextButton.classList.toggle("hidden", !plan);
+      document.getElementById("team-name").textContent = payload.team.name;
+      updateWeekNavigation();
+      setPlanQuery(plan ? id : "");
       content.innerHTML = '<div class="card muted">Loading plan...</div>';
       try {
         const encrypted = await fetchEncrypted(metadata.file, "plan");
@@ -368,6 +393,7 @@
         const article = document.createElement("article");
         article.className = "card document";
         article.innerHTML = documentData.html;
+        if (plan) article.querySelector("h1")?.remove();
         content.replaceChildren(article);
         if (anchor) {
           requestAnimationFrame(() => document.getElementById(anchor)?.scrollIntoView());
@@ -381,6 +407,45 @@
         message.textContent = "This plan could not be loaded. Return to the team home page and try again.";
         content.replaceChildren(message);
       }
+    }
+
+    function showAdjacentPlan(offset) {
+      const plans = [...payload.plans].sort((a, b) => a.year - b.year || a.week - b.week);
+      const index = plans.findIndex((plan) => plan.id === activePlanId);
+      const target = plans[index + offset];
+      if (target) void showDocument(target.id);
+    }
+
+    function updateWeekNavigation() {
+      const plans = [...payload.plans].sort((a, b) => a.year - b.year || a.week - b.week);
+      const index = plans.findIndex((plan) => plan.id === activePlanId);
+      previousButton.disabled = index <= 0;
+      nextButton.disabled = index < 0 || index >= plans.length - 1;
+    }
+
+    function setPlanQuery(planId) {
+      const url = new URL(location.href);
+      if (planId) {
+        url.searchParams.set("plan", planId);
+      } else {
+        url.searchParams.delete("plan");
+      }
+      history.replaceState(null, "", url.pathname + url.search);
+    }
+
+    function toggleTheme() {
+      const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = theme;
+      try {
+        localStorage.setItem("coachplans:theme", theme);
+      } catch {}
+      updateThemeButton();
+    }
+
+    function updateThemeButton() {
+      const dark = document.documentElement.dataset.theme === "dark";
+      themeButton.textContent = dark ? "Light mode" : "Dark mode";
+      themeButton.setAttribute("aria-pressed", String(dark));
     }
 
     async function decryptPayload(encrypted, secret) {

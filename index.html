@@ -4,12 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <title>Soccer practice plans</title>
+  <title>Coach practice plans</title>
   <script>
     (() => {
       const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      let saved = "";
+      try {
+        saved = localStorage.getItem("coachplans:theme") || "";
+      } catch {}
       const theme =
-        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        param || saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
       document.documentElement.setAttribute("data-theme", theme);
     })();
   </script>
@@ -66,27 +70,248 @@
       --cp-sheen: rgba(255, 255, 255, 0.04);
       --cp-highlight: rgba(253, 142, 161, 0.12);
     }
+    * { box-sizing: border-box; }
     body {
-      margin: 3rem auto;
-      max-width: 40rem;
-      padding: 0 1rem;
+      margin: 0;
       background: var(--cp-bg);
       color: var(--cp-text);
       font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.55;
     }
-    main {
-      padding: 2rem;
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .shell { width: min(calc(100% - 24px), 920px); margin: 0 auto; padding: 20px 0 48px; }
+    .topbar, .card {
       background: var(--cp-surface);
       border: 1px solid var(--cp-border);
       border-radius: 16px;
+      box-shadow: 0 0 2px var(--cp-border), 0 1px 2px var(--cp-border);
     }
-    p { color: var(--cp-text-muted); }
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+    }
+    .topbar h1 { flex: 1; margin: 0; font-size: clamp(1.25rem, 5vw, 1.75rem); }
+    .card { padding: clamp(18px, 5vw, 32px); }
+    .unlock { max-width: 520px; margin: 12vh auto 0; }
+    .unlock h1 { margin-top: 0; }
+    .unlock p, .team-card p { color: var(--cp-text-muted); }
+    .field { display: grid; gap: 8px; margin-top: 20px; }
+    .field input {
+      width: 100%;
+      padding: 12px;
+      color: var(--cp-text);
+      background: var(--cp-bg-elevated);
+      border: 1px solid var(--cp-border-strong);
+      border-radius: 0.625rem;
+    }
+    .primary, .secondary, .team-link {
+      border-radius: 0.625rem;
+      padding: 10px 14px;
+      font-weight: 650;
+    }
+    .primary {
+      margin-top: 12px;
+      color: var(--cp-accent-fg);
+      background: var(--cp-accent);
+      border: 1px solid var(--cp-accent);
+    }
+    .primary:hover { background: var(--cp-accent-hover); }
+    .secondary {
+      color: var(--cp-text);
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+    }
+    .teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    .team-card { border-top: 5px solid var(--team-color); }
+    .team-card h2 { margin-top: 0; }
+    .team-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .team-link {
+      display: inline-block;
+      color: var(--cp-text);
+      background: var(--cp-surface-soft);
+      border: 1px solid var(--team-color);
+      text-decoration: none;
+    }
+    .team-link:hover { background: var(--cp-bg-elevated); }
+    .error { min-height: 24px; color: var(--cp-danger); margin-top: 12px; }
+    .hidden { display: none !important; }
+    @media (max-width: 560px) {
+      .shell { width: min(calc(100% - 16px), 920px); padding-top: 8px; }
+      .topbar { position: sticky; top: 4px; z-index: 2; }
+      .team-link { flex: 1; text-align: center; }
+    }
   </style>
 </head>
 <body>
-  <main>
-    <h1>Soccer practice plans</h1>
-    <p>Use the private team link shared by your coach.</p>
+  <main class="shell">
+    <section id="unlock" class="card unlock">
+      <h1>Coach practice plans</h1>
+      <p>Open your private coach link or enter the shared coach password.</p>
+      <form id="unlock-form">
+        <label class="field">
+          <span>Coach password</span>
+          <input id="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="primary" type="submit">View teams</button>
+        <div id="error" class="error" role="alert"></div>
+      </form>
+    </section>
+
+    <section id="app" class="hidden">
+      <header class="topbar">
+        <h1>Coach practice plans</h1>
+        <button id="theme-button" class="secondary" type="button">Dark mode</button>
+      </header>
+      <div id="teams" class="teams"></div>
+    </section>
   </main>
+
+  <script>
+    const storageKey = "coachplans:coach:secret";
+    const unlock = document.getElementById("unlock");
+    const app = document.getElementById("app");
+    const form = document.getElementById("unlock-form");
+    const passwordInput = document.getElementById("password");
+    const error = document.getElementById("error");
+    const teamsContainer = document.getElementById("teams");
+    const themeButton = document.getElementById("theme-button");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await unlockWith(passwordInput.value);
+    });
+    themeButton.addEventListener("click", toggleTheme);
+
+    updateThemeButton();
+    start();
+
+    async function start() {
+      const fragmentSecret = decodeURIComponent(location.hash.slice(1));
+      const savedSecret = sessionStorage.getItem(storageKey);
+      const secret = fragmentSecret || savedSecret;
+      if (!secret) {
+        passwordInput.focus();
+        return;
+      }
+      await unlockWith(secret, Boolean(fragmentSecret));
+    }
+
+    async function unlockWith(secret, removeFragment = false) {
+      setError("");
+      try {
+        const response = await fetch("coach-payload.json", { cache: "no-store" });
+        if (!response.ok) throw new Error("Unable to load coach plans.");
+        const payload = await decryptPayload(await response.json(), secret);
+        renderTeams(payload.teams);
+        sessionStorage.setItem(storageKey, secret);
+        if (removeFragment) history.replaceState(null, "", location.pathname + location.search);
+        unlock.classList.add("hidden");
+        app.classList.remove("hidden");
+      } catch {
+        sessionStorage.removeItem(storageKey);
+        setError("That coach password did not work.");
+        unlock.classList.remove("hidden");
+        app.classList.add("hidden");
+        passwordInput.select();
+      }
+    }
+
+    function renderTeams(teams) {
+      const cards = teams.map((team) => {
+        const card = document.createElement("article");
+        card.className = "card team-card";
+        card.style.setProperty(
+          "--team-color",
+          team.slug === "panthers" ? "var(--cp-accent)" : "var(--cp-warning)",
+        );
+
+        const heading = document.createElement("h2");
+        heading.textContent = team.name;
+        const detail = document.createElement("p");
+        detail.textContent = team.latestPlan
+          ? `Latest plan: Week ${team.latestPlan.week}, ${team.latestPlan.year}`
+          : "No weekly plans are available yet.";
+        const actions = document.createElement("div");
+        actions.className = "team-actions";
+        actions.append(
+          createTeamLink("Team home", team, ""),
+          createTeamLink("Latest week", team, team.latestPlan?.id || ""),
+        );
+        card.append(heading, detail, actions);
+        return card;
+      });
+      teamsContainer.replaceChildren(...cards);
+    }
+
+    function createTeamLink(label, team, planId) {
+      const link = document.createElement("a");
+      link.className = "team-link";
+      link.textContent = label;
+      const url = new URL(`${team.slug}/`, location.href);
+      if (planId) url.searchParams.set("plan", planId);
+      url.hash = encodeURIComponent(team.secret);
+      link.href = url.href;
+      if (!planId && label === "Latest week" && !team.latestPlan) {
+        link.classList.add("hidden");
+      }
+      return link;
+    }
+
+    function toggleTheme() {
+      const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = theme;
+      try {
+        localStorage.setItem("coachplans:theme", theme);
+      } catch {}
+      updateThemeButton();
+    }
+
+    function updateThemeButton() {
+      const dark = document.documentElement.dataset.theme === "dark";
+      themeButton.textContent = dark ? "Light mode" : "Dark mode";
+      themeButton.setAttribute("aria-pressed", String(dark));
+    }
+
+    async function decryptPayload(encrypted, secret) {
+      const encoder = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(secret),
+        "PBKDF2",
+        false,
+        ["deriveKey"],
+      );
+      const key = await crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          hash: "SHA-256",
+          salt: fromBase64(encrypted.salt),
+          iterations: encrypted.iterations,
+        },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["decrypt"],
+      );
+      const decrypted = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: fromBase64(encrypted.iv), tagLength: 128 },
+        key,
+        fromBase64(encrypted.data),
+      );
+      return JSON.parse(new TextDecoder().decode(decrypted));
+    }
+
+    function fromBase64(value) {
+      return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+    }
+
+    function setError(message) {
+      error.textContent = message;
+    }
+  </script>
 </body>
 </html>
