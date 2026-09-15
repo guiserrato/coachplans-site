@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>Panthers practice plans</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--cp-bg);
+      color: var(--cp-text);
+      font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.55;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    a { color: var(--cp-link); }
+    .shell { width: min(100% - 24px, 920px); margin: 0 auto; padding: 20px 0 48px; }
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 52px;
+      margin-bottom: 16px;
+    }
+    .topbar h1 { flex: 1; margin: 0; font-size: clamp(1.25rem, 5vw, 1.75rem); }
+    .card {
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      box-shadow: 0 0 2px var(--cp-border), 0 1px 2px var(--cp-border);
+      padding: clamp(18px, 5vw, 32px);
+    }
+    .unlock { max-width: 520px; margin: 12vh auto 0; }
+    .unlock h1 { margin-top: 0; }
+    .unlock p { color: var(--cp-text-muted); }
+    .field { display: grid; gap: 8px; margin-top: 20px; }
+    .field input {
+      width: 100%;
+      padding: 12px;
+      color: var(--cp-text);
+      background: var(--cp-bg-elevated);
+      border: 1px solid var(--cp-border-strong);
+      border-radius: 0.625rem;
+    }
+    .primary, .secondary {
+      border-radius: 0.625rem;
+      padding: 10px 14px;
+      font-weight: 650;
+    }
+    .primary {
+      margin-top: 12px;
+      color: var(--cp-accent-fg);
+      background: var(--cp-accent);
+      border: 1px solid var(--cp-accent);
+    }
+    .primary:hover { background: var(--cp-accent-hover); }
+    .secondary {
+      color: var(--cp-text);
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+    }
+    .error { min-height: 24px; color: var(--cp-danger); margin-top: 12px; }
+    .muted { color: var(--cp-text-muted); }
+    .year { margin: 28px 0 12px; font-size: 1.15rem; }
+    .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .plan {
+      display: block;
+      width: 100%;
+      text-align: left;
+      color: var(--cp-text);
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      padding: 16px;
+    }
+    .plan:hover { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+    .plan strong { display: block; font-size: 1.05rem; }
+    .plan span { color: var(--cp-text-muted); }
+    .document h1 { margin-top: 0; line-height: 1.2; }
+    .document h2 { margin-top: 2rem; padding-bottom: 6px; border-bottom: 1px solid var(--cp-border); }
+    .document h3 { margin-top: 1.5rem; }
+    .document img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin: 16px auto;
+      border-radius: 0.625rem;
+    }
+    .document table { width: 100%; border-collapse: collapse; overflow-x: auto; display: block; }
+    .document th, .document td { border: 1px solid var(--cp-border); padding: 8px; text-align: left; }
+    .document blockquote {
+      margin-left: 0;
+      padding-left: 16px;
+      border-left: 4px solid var(--cp-accent);
+      color: var(--cp-text-muted);
+    }
+    .unavailable-link { color: var(--cp-text-muted); }
+    .hidden { display: none !important; }
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 16px, 920px); padding-top: 8px; }
+      .topbar { position: sticky; top: 0; z-index: 2; background: var(--cp-bg); padding: 8px 0; }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section id="unlock" class="card unlock">
+      <h1>Panthers practice plans</h1>
+      <p>Open the team link you received, or enter the shared team password.</p>
+      <form id="unlock-form">
+        <label class="field">
+          <span>Team password</span>
+          <input id="password" type="password" autocomplete="current-password" required>
+        </label>
+        <button class="primary" type="submit">View plans</button>
+        <div id="error" class="error" role="alert"></div>
+      </form>
+    </section>
+
+    <section id="app" class="hidden">
+      <header class="topbar">
+        <button id="home-button" class="secondary hidden" type="button">Back</button>
+        <h1 id="team-name">Panthers</h1>
+        <button id="lock-button" class="secondary" type="button">Lock</button>
+      </header>
+      <div id="content"></div>
+    </section>
+  </main>
+
+  <script>
+    const teamName = "Panthers";
+    const storageKey = `coachplans:${location.pathname}:secret`;
+    const unlock = document.getElementById("unlock");
+    const app = document.getElementById("app");
+    const form = document.getElementById("unlock-form");
+    const passwordInput = document.getElementById("password");
+    const error = document.getElementById("error");
+    const content = document.getElementById("content");
+    const homeButton = document.getElementById("home-button");
+    const lockButton = document.getElementById("lock-button");
+    let payload = null;
+    let activeSecret = "";
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await unlockWith(passwordInput.value);
+    });
+    homeButton.addEventListener("click", showHome);
+    lockButton.addEventListener("click", () => {
+      sessionStorage.removeItem(storageKey);
+      payload = null;
+      activeSecret = "";
+      content.replaceChildren();
+      app.classList.add("hidden");
+      unlock.classList.remove("hidden");
+      passwordInput.value = "";
+      passwordInput.focus();
+    });
+    content.addEventListener("click", (event) => {
+      const documentLink = event.target.closest("[data-doc]");
+      if (documentLink) {
+        event.preventDefault();
+        void showDocument(documentLink.dataset.doc, documentLink.dataset.anchor);
+        return;
+      }
+      const planButton = event.target.closest("[data-plan]");
+      if (planButton) void showDocument(planButton.dataset.plan);
+    });
+
+    start();
+
+    async function start() {
+      const fragmentSecret = decodeURIComponent(location.hash.slice(1));
+      const savedSecret = sessionStorage.getItem(storageKey);
+      const secret = fragmentSecret || savedSecret;
+      if (!secret) {
+        passwordInput.focus();
+        return;
+      }
+      await unlockWith(secret, Boolean(fragmentSecret));
+    }
+
+    async function unlockWith(secret, removeFragment = false) {
+      setError("");
+      try {
+        const encrypted = await fetch("payload.json", { cache: "no-store" }).then((response) => {
+          if (!response.ok) throw new Error("Unable to load the encrypted plans.");
+          return response.json();
+        });
+        payload = await decryptPayload(encrypted, secret);
+        activeSecret = secret;
+        sessionStorage.setItem(storageKey, secret);
+        if (removeFragment) history.replaceState(null, "", location.pathname + location.search);
+        unlock.classList.add("hidden");
+        app.classList.remove("hidden");
+        showHome();
+      } catch {
+        payload = null;
+        activeSecret = "";
+        sessionStorage.removeItem(storageKey);
+        setError("That team password did not work.");
+        unlock.classList.remove("hidden");
+        app.classList.add("hidden");
+        passwordInput.select();
+      }
+    }
+
+    function showHome() {
+      homeButton.classList.add("hidden");
+      document.getElementById("team-name").textContent = `${payload.team.name} plans`;
+      const wrapper = document.createElement("div");
+      const years = new Map();
+      for (const plan of payload.plans) {
+        if (!years.has(plan.year)) years.set(plan.year, []);
+        years.get(plan.year).push(plan);
+      }
+      for (const [year, plans] of years) {
+        const heading = document.createElement("h2");
+        heading.className = "year";
+        heading.textContent = String(year);
+        wrapper.append(heading);
+        const grid = document.createElement("div");
+        grid.className = "plans";
+        for (const plan of plans) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "plan";
+          button.dataset.plan = plan.id;
+          const title = document.createElement("strong");
+          title.textContent = plan.title;
+          const detail = document.createElement("span");
+          detail.textContent = `Week ${plan.week}`;
+          button.append(title, detail);
+          grid.append(button);
+        }
+        wrapper.append(grid);
+      }
+      content.replaceChildren(wrapper);
+      window.scrollTo({ top: 0 });
+    }
+
+    async function showDocument(id, anchor = "") {
+      const metadata = payload.documents[id];
+      if (!metadata) return;
+      homeButton.classList.remove("hidden");
+      document.getElementById("team-name").textContent = metadata.title;
+      content.innerHTML = '<div class="card muted">Loading plan...</div>';
+      try {
+        const encrypted = await fetch(metadata.file, { cache: "no-store" }).then((response) => {
+          if (!response.ok) throw new Error("Unable to load the encrypted plan.");
+          return response.json();
+        });
+        const documentData = await decryptPayload(encrypted, activeSecret);
+        if (documentData.id !== id) throw new Error("The encrypted plan did not match its link.");
+        const article = document.createElement("article");
+        article.className = "card document";
+        article.innerHTML = documentData.html;
+        content.replaceChildren(article);
+        if (anchor) {
+          requestAnimationFrame(() => document.getElementById(anchor)?.scrollIntoView());
+        } else {
+          window.scrollTo({ top: 0 });
+        }
+      } catch (loadError) {
+        console.error(loadError);
+        const message = document.createElement("div");
+        message.className = "card error";
+        message.textContent = "This plan could not be loaded. Return to the team home page and try again.";
+        content.replaceChildren(message);
+      }
+    }
+
+    async function decryptPayload(encrypted, secret) {
+      const encoder = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(secret),
+        "PBKDF2",
+        false,
+        ["deriveKey"],
+      );
+      const key = await crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          hash: "SHA-256",
+          salt: fromBase64(encrypted.salt),
+          iterations: encrypted.iterations,
+        },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["decrypt"],
+      );
+      const decrypted = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: fromBase64(encrypted.iv), tagLength: 128 },
+        key,
+        fromBase64(encrypted.data),
+      );
+      return JSON.parse(new TextDecoder().decode(decrypted));
+    }
+
+    function fromBase64(value) {
+      return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+    }
+
+    function setError(message) {
+      error.textContent = message;
+    }
+  </script>
+</body>
+</html>
