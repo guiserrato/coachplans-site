@@ -39,6 +39,7 @@
       --cp-panel-strong: rgba(255, 255, 255, 0.96);
       --cp-sheen: rgba(255, 255, 255, 0.55);
       --cp-highlight: rgba(177, 31, 75, 0.12);
+      --cp-team-frame: #ead277;
     }
     html[data-theme="dark"] {
       color-scheme: dark;
@@ -65,11 +66,12 @@
       --cp-panel-strong: rgba(41, 41, 41, 0.96);
       --cp-sheen: rgba(255, 255, 255, 0.04);
       --cp-highlight: rgba(253, 142, 161, 0.12);
+      --cp-team-frame: #4a3d16;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: var(--cp-bg);
+      background: var(--cp-team-frame);
       color: var(--cp-text);
       font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
       line-height: 1.55;
@@ -84,8 +86,22 @@
       gap: 12px;
       min-height: 52px;
       margin-bottom: 16px;
+      padding: 10px 12px;
+      background: var(--cp-panel-strong);
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      box-shadow: 0 0 2px var(--cp-border), 0 1px 2px var(--cp-border);
     }
     .topbar h1 { flex: 1; margin: 0; font-size: clamp(1.25rem, 5vw, 1.75rem); }
+    .team-logo {
+      width: 54px;
+      height: 54px;
+      flex: 0 0 auto;
+      object-fit: contain;
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+    }
     .card {
       background: var(--cp-surface);
       border: 1px solid var(--cp-border);
@@ -161,7 +177,8 @@
     .hidden { display: none !important; }
     @media (max-width: 560px) {
       .shell { width: min(100% - 16px, 920px); padding-top: 8px; }
-      .topbar { position: sticky; top: 0; z-index: 2; background: var(--cp-bg); padding: 8px 0; }
+      .topbar { position: sticky; top: 4px; z-index: 2; }
+      .team-logo { width: 44px; height: 44px; }
       .card { padding: 18px; }
     }
   </style>
@@ -184,6 +201,7 @@
     <section id="app" class="hidden">
       <header class="topbar">
         <button id="home-button" class="secondary hidden" type="button">Back</button>
+        <img id="team-logo" class="team-logo hidden" alt="Golden Warriors logo">
         <h1 id="team-name">Golden Warriors</h1>
         <button id="lock-button" class="secondary" type="button">Lock</button>
       </header>
@@ -192,7 +210,6 @@
   </main>
 
   <script>
-    const teamName = "Golden Warriors";
     const storageKey = `coachplans:${location.pathname}:secret`;
     const unlock = document.getElementById("unlock");
     const app = document.getElementById("app");
@@ -202,6 +219,7 @@
     const content = document.getElementById("content");
     const homeButton = document.getElementById("home-button");
     const lockButton = document.getElementById("lock-button");
+    const teamLogo = document.getElementById("team-logo");
     let payload = null;
     let activeSecret = "";
 
@@ -214,6 +232,8 @@
       sessionStorage.removeItem(storageKey);
       payload = null;
       activeSecret = "";
+      teamLogo.removeAttribute("src");
+      teamLogo.classList.add("hidden");
       content.replaceChildren();
       app.classList.add("hidden");
       unlock.classList.remove("hidden");
@@ -247,12 +267,13 @@
     async function unlockWith(secret, removeFragment = false) {
       setError("");
       try {
-        const encrypted = await fetch("payload.json", { cache: "no-store" }).then((response) => {
-          if (!response.ok) throw new Error("Unable to load the encrypted plans.");
-          return response.json();
-        });
+        const encrypted = await fetchEncrypted("payload.json", "plans");
         payload = await decryptPayload(encrypted, secret);
         activeSecret = secret;
+        const encryptedLogo = await fetchEncrypted(payload.team.logoFile, "team logo");
+        const logo = await decryptPayload(encryptedLogo, secret);
+        teamLogo.src = logo.dataUri;
+        teamLogo.classList.remove("hidden");
         sessionStorage.setItem(storageKey, secret);
         if (removeFragment) history.replaceState(null, "", location.pathname + location.search);
         unlock.classList.add("hidden");
@@ -310,10 +331,7 @@
       document.getElementById("team-name").textContent = metadata.title;
       content.innerHTML = '<div class="card muted">Loading plan...</div>';
       try {
-        const encrypted = await fetch(metadata.file, { cache: "no-store" }).then((response) => {
-          if (!response.ok) throw new Error("Unable to load the encrypted plan.");
-          return response.json();
-        });
+        const encrypted = await fetchEncrypted(metadata.file, "plan");
         const documentData = await decryptPayload(encrypted, activeSecret);
         if (documentData.id !== id) throw new Error("The encrypted plan did not match its link.");
         const article = document.createElement("article");
@@ -361,6 +379,12 @@
         fromBase64(encrypted.data),
       );
       return JSON.parse(new TextDecoder().decode(decrypted));
+    }
+
+    async function fetchEncrypted(file, description) {
+      const response = await fetch(file, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Unable to load the encrypted ${description}.`);
+      return response.json();
     }
 
     function fromBase64(value) {
