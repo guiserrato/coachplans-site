@@ -160,6 +160,12 @@
       background: var(--cp-surface);
       border: 1px solid var(--cp-border);
     }
+    .icon-button {
+      min-width: 42px;
+      padding-inline: 12px;
+      font-size: 1.2rem;
+      line-height: 1;
+    }
     .secondary:disabled { cursor: default; opacity: 0.42; }
     .header-actions { display: flex; align-items: center; gap: 8px; }
     .week-navigation { display: flex; gap: 8px; }
@@ -246,12 +252,12 @@
         </span>
         <h1 id="team-name">Golden Warriors</h1>
         <div class="header-actions">
-          <button id="theme-button" class="secondary" type="button">Dark mode</button>
+          <button id="theme-button" class="secondary icon-button" type="button" aria-label="Switch theme" title="Switch theme">💡</button>
         </div>
         <nav id="week-navigation" class="week-navigation hidden" aria-label="Week navigation">
-          <button id="previous-button" class="secondary" type="button">Previous</button>
-          <button id="home-button" class="secondary" type="button">Home</button>
-          <button id="next-button" class="secondary" type="button">Next</button>
+          <button id="previous-button" class="secondary icon-button" type="button" aria-label="Previous week" title="Previous week">←</button>
+          <button id="home-button" class="secondary icon-button" type="button" aria-label="Team home" title="Team home">⌂</button>
+          <button id="next-button" class="secondary icon-button" type="button" aria-label="Next week" title="Next week">→</button>
         </nav>
       </header>
       <div id="content"></div>
@@ -344,6 +350,7 @@
       activePlanId = "";
       weekNavigation.classList.add("hidden");
       document.getElementById("team-name").textContent = payload.team.name;
+      document.title = `${payload.team.name} practice plans`;
       setPlanQuery("");
       const wrapper = document.createElement("div");
       const years = new Map();
@@ -382,7 +389,13 @@
       weekNavigation.classList.remove("hidden");
       previousButton.classList.toggle("hidden", !plan);
       nextButton.classList.toggle("hidden", !plan);
-      document.getElementById("team-name").textContent = payload.team.name;
+      const pageTitle = plan
+        ? `${payload.team.name} · Week ${plan.week}`
+        : metadata.title;
+      document.getElementById("team-name").textContent = pageTitle;
+      document.title = plan
+        ? `${payload.team.name} - Week ${plan.week} practice plans`
+        : `${metadata.title} - ${payload.team.name}`;
       updateWeekNavigation();
       setPlanQuery(plan ? id : "");
       content.innerHTML = '<div class="card muted">Loading plan...</div>';
@@ -444,8 +457,10 @@
 
     function updateThemeButton() {
       const dark = document.documentElement.dataset.theme === "dark";
-      themeButton.textContent = dark ? "Light mode" : "Dark mode";
       themeButton.setAttribute("aria-pressed", String(dark));
+      const label = dark ? "Switch to light mode" : "Switch to dark mode";
+      themeButton.setAttribute("aria-label", label);
+      themeButton.title = label;
     }
 
     async function decryptPayload(encrypted, secret) {

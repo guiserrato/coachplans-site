@@ -125,15 +125,49 @@
       background: var(--cp-surface);
       border: 1px solid var(--cp-border);
     }
+    .icon-button {
+      min-width: 42px;
+      padding-inline: 12px;
+      font-size: 1.2rem;
+      line-height: 1;
+    }
     .teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-    .team-card { border-top: 5px solid var(--team-color); }
-    .team-card h2 { margin-top: 0; }
+    .team-card {
+      --team-border: var(--team-border-light);
+      --team-logo-surface: var(--team-logo-surface-light);
+      border-top: 5px solid var(--team-border);
+    }
+    html[data-theme="dark"] .team-card {
+      --team-border: var(--team-border-dark);
+      --team-logo-surface: var(--team-logo-surface-dark);
+    }
+    .team-heading { display: flex; align-items: center; gap: 14px; }
+    .team-heading h2 { margin: 0; }
+    .team-logo-link {
+      width: 64px;
+      height: 64px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      padding: 3px;
+      overflow: hidden;
+      background: var(--team-logo-surface);
+      border: 2px solid var(--team-border);
+      border-radius: 0.625rem;
+    }
+    .team-logo {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+    }
+    .team-card[data-team="golden-warriors"] .team-logo { filter: brightness(0); }
     .team-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
     .team-link {
       display: inline-block;
       color: var(--cp-text);
       background: var(--cp-surface-soft);
-      border: 1px solid var(--team-color);
+      border: 1px solid var(--team-border);
       text-decoration: none;
     }
     .team-link:hover { background: var(--cp-bg-elevated); }
@@ -164,7 +198,7 @@
     <section id="app" class="hidden">
       <header class="topbar">
         <h1>Coach practice plans</h1>
-        <button id="theme-button" class="secondary" type="button">Dark mode</button>
+        <button id="theme-button" class="secondary icon-button" type="button" aria-label="Switch theme" title="Switch theme">💡</button>
       </header>
       <div id="teams" class="teams"></div>
     </section>
@@ -224,24 +258,34 @@
       const cards = teams.map((team) => {
         const card = document.createElement("article");
         card.className = "card team-card";
-        card.style.setProperty(
-          "--team-color",
-          team.slug === "panthers" ? "var(--cp-accent)" : "var(--cp-warning)",
-        );
+        card.dataset.team = team.slug;
+        card.style.setProperty("--team-border-light", team.borderLight);
+        card.style.setProperty("--team-border-dark", team.borderDark);
+        card.style.setProperty("--team-logo-surface-light", team.logoSurfaceLight);
+        card.style.setProperty("--team-logo-surface-dark", team.logoSurfaceDark);
 
+        const headingRow = document.createElement("div");
+        headingRow.className = "team-heading";
+        const logoLink = createTeamLink("", team, "");
+        logoLink.className = "team-logo-link";
+        logoLink.setAttribute("aria-label", `${team.name} home`);
+        logoLink.title = `${team.name} home`;
+        const logo = document.createElement("img");
+        logo.className = "team-logo";
+        logo.src = team.logo;
+        logo.alt = `${team.name} logo`;
+        logoLink.append(logo);
         const heading = document.createElement("h2");
         heading.textContent = team.name;
+        headingRow.append(logoLink, heading);
         const detail = document.createElement("p");
         detail.textContent = team.latestPlan
           ? `Latest plan: Week ${team.latestPlan.week}, ${team.latestPlan.year}`
           : "No weekly plans are available yet.";
         const actions = document.createElement("div");
         actions.className = "team-actions";
-        actions.append(
-          createTeamLink("Team home", team, ""),
-          createTeamLink("Latest week", team, team.latestPlan?.id || ""),
-        );
-        card.append(heading, detail, actions);
+        actions.append(createTeamLink("Latest practice plan", team, team.latestPlan?.id || ""));
+        card.append(headingRow, detail, actions);
         return card;
       });
       teamsContainer.replaceChildren(...cards);
@@ -255,7 +299,7 @@
       if (planId) url.searchParams.set("plan", planId);
       url.hash = encodeURIComponent(team.secret);
       link.href = url.href;
-      if (!planId && label === "Latest week" && !team.latestPlan) {
+      if (!planId && label && !team.latestPlan) {
         link.classList.add("hidden");
       }
       return link;
@@ -272,8 +316,10 @@
 
     function updateThemeButton() {
       const dark = document.documentElement.dataset.theme === "dark";
-      themeButton.textContent = dark ? "Light mode" : "Dark mode";
       themeButton.setAttribute("aria-pressed", String(dark));
+      const label = dark ? "Switch to light mode" : "Switch to dark mode";
+      themeButton.setAttribute("aria-label", label);
+      themeButton.title = label;
     }
 
     async function decryptPayload(encrypted, secret) {
