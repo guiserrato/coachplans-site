@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
-  <title>Coach practice plans</title>
+  <title>Soccer drill catalog</title>
   <script>
     (() => {
       const param = new URLSearchParams(window.location.search).get("scoutTheme");
@@ -80,6 +80,7 @@
     }
     button, input { font: inherit; }
     button { cursor: pointer; }
+    a { color: var(--cp-link); }
     .shell { width: min(calc(100% - 24px), 920px); margin: 0 auto; padding: 20px 0 48px; }
     .topbar, .card {
       background: var(--cp-surface);
@@ -90,7 +91,7 @@
     .topbar {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
       margin-bottom: 16px;
       padding: 12px 16px;
     }
@@ -98,7 +99,7 @@
     .card { padding: clamp(18px, 5vw, 32px); }
     .unlock { max-width: 520px; margin: 12vh auto 0; }
     .unlock h1 { margin-top: 0; }
-    .unlock p, .team-card p { color: var(--cp-text-muted); }
+    .unlock p { color: var(--cp-text-muted); }
     .field { display: grid; gap: 8px; margin-top: 20px; }
     .field input {
       width: 100%;
@@ -108,7 +109,7 @@
       border: 1px solid var(--cp-border-strong);
       border-radius: 0.625rem;
     }
-    .primary, .secondary, .team-link {
+    .primary, .secondary {
       border-radius: 0.625rem;
       padding: 10px 14px;
       font-weight: 650;
@@ -121,109 +122,98 @@
     }
     .primary:hover { background: var(--cp-accent-hover); }
     .secondary {
+      min-width: 42px;
       color: var(--cp-text);
       background: var(--cp-surface);
       border: 1px solid var(--cp-border);
-    }
-    .icon-button {
-      min-width: 42px;
-      padding-inline: 12px;
       font-size: 1.2rem;
       line-height: 1;
     }
-    .teams { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-    .shared-resources { margin-bottom: 16px; }
-    .shared-resources h2 { margin-top: 0; }
-    .team-card {
-      --team-border: var(--team-border-light);
-      --team-logo-surface: var(--team-logo-surface-light);
-      border-top: 5px solid var(--team-border);
-    }
-    html[data-theme="dark"] .team-card {
-      --team-border: var(--team-border-dark);
-      --team-logo-surface: var(--team-logo-surface-dark);
-    }
-    .team-heading { display: flex; align-items: center; gap: 14px; }
-    .team-heading h2 { margin: 0; }
-    .team-logo-link {
-      width: 64px;
-      height: 64px;
-      flex: 0 0 auto;
-      display: grid;
-      place-items: center;
-      padding: 3px;
-      overflow: hidden;
-      background: var(--team-logo-surface);
-      border: 2px solid var(--team-border);
+    .document h1 { margin-top: 0; line-height: 1.2; }
+    .document h2 { margin-top: 2rem; padding-bottom: 6px; border-bottom: 1px solid var(--cp-border); }
+    .document h3 { margin-top: 1.5rem; }
+    .document img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      margin: 16px auto;
       border-radius: 0.625rem;
     }
-    .team-logo {
-      width: 100%;
-      height: 100%;
-      display: block;
-      object-fit: contain;
+    .document table { width: 100%; border-collapse: collapse; overflow-x: auto; display: block; }
+    .document th, .document td { border: 1px solid var(--cp-border); padding: 8px; text-align: left; }
+    .document blockquote {
+      margin-left: 0;
+      padding-left: 16px;
+      border-left: 4px solid var(--cp-accent);
+      color: var(--cp-text-muted);
     }
-    .team-card[data-team="golden-warriors"] .team-logo { filter: brightness(0); }
-    .team-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-    .team-link {
-      display: inline-block;
-      color: var(--cp-text);
-      background: var(--cp-surface-soft);
-      border: 1px solid var(--team-border);
-      text-decoration: none;
-    }
-    .team-link:hover { background: var(--cp-bg-elevated); }
     .error { min-height: 24px; color: var(--cp-danger); margin-top: 12px; }
+    .unavailable-link { color: var(--cp-text-muted); }
     .hidden { display: none !important; }
     @media (max-width: 560px) {
       .shell { width: min(calc(100% - 16px), 920px); padding-top: 8px; }
       .topbar { position: sticky; top: 4px; z-index: 2; }
-      .team-link { flex: 1; text-align: center; }
     }
   </style>
 </head>
 <body>
   <main class="shell">
     <section id="unlock" class="card unlock">
-      <h1>Coach practice plans</h1>
-      <p>Open your private coach link or enter the shared coach password.</p>
+      <h1>Soccer drill catalog</h1>
+      <p>Open the drills link from a team or coach page, or enter one of those passwords.</p>
       <form id="unlock-form">
         <label class="field">
-          <span>Coach password</span>
+          <span>Password</span>
           <input id="password" type="password" autocomplete="current-password" required>
         </label>
-        <button class="primary" type="submit">View teams</button>
+        <button class="primary" type="submit">View drills</button>
         <div id="error" class="error" role="alert"></div>
       </form>
     </section>
 
     <section id="app" class="hidden">
       <header class="topbar">
-        <h1>Coach practice plans</h1>
-        <button id="theme-button" class="secondary icon-button" type="button" aria-label="Switch theme" title="Switch theme">💡</button>
+        <h1 id="page-title">Soccer drills</h1>
+        <button id="catalog-button" class="secondary hidden" type="button" aria-label="Drill catalog" title="Drill catalog">☷</button>
+        <a id="site-home" class="secondary" aria-label="Return to site home" title="Return to site home">⌂</a>
+        <button id="theme-button" class="secondary" type="button" aria-label="Switch theme" title="Switch theme">💡</button>
       </header>
-      <section id="shared-resources" class="card shared-resources"></section>
-      <div id="teams" class="teams"></div>
+      <div id="content"></div>
     </section>
   </main>
 
   <script>
-    const storageKey = "coachplans:coach:secret";
+    const payloadFiles = [
+      "payload-coach.json",
+      "payload-panthers.json",
+      "payload-golden-warriors.json",
+    ];
+    const storageKey = "coachplans:drills:secret";
     const unlock = document.getElementById("unlock");
     const app = document.getElementById("app");
     const form = document.getElementById("unlock-form");
     const passwordInput = document.getElementById("password");
     const error = document.getElementById("error");
-    const sharedResources = document.getElementById("shared-resources");
-    const teamsContainer = document.getElementById("teams");
+    const content = document.getElementById("content");
+    const pageTitle = document.getElementById("page-title");
+    const catalogButton = document.getElementById("catalog-button");
+    const siteHome = document.getElementById("site-home");
     const themeButton = document.getElementById("theme-button");
+    let payload = null;
     let activeSecret = "";
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       await unlockWith(passwordInput.value);
     });
+    catalogButton.addEventListener("click", showCatalog);
     themeButton.addEventListener("click", toggleTheme);
+    content.addEventListener("click", (event) => {
+      const link = event.target.closest("[data-doc]");
+      if (!link) return;
+      event.preventDefault();
+      showDocument(link.dataset.doc, link.dataset.anchor);
+    });
 
     updateThemeButton();
     start();
@@ -242,105 +232,68 @@
     async function unlockWith(secret, removeFragment = false) {
       setError("");
       try {
-        const response = await fetch("coach-payload.json", { cache: "no-store" });
-        if (!response.ok) throw new Error("Unable to load coach plans.");
-        const payload = await decryptPayload(await response.json(), secret);
+        payload = await decryptAnyPayload(secret);
         activeSecret = secret;
-        renderSharedResources(payload.sharedResources);
-        renderTeams(payload.teams);
         sessionStorage.setItem(storageKey, secret);
+        siteHome.href = new URL(payload.homePath, location.href).href + `#${encodeURIComponent(secret)}`;
         if (removeFragment) history.replaceState(null, "", location.pathname + location.search);
         unlock.classList.add("hidden");
         app.classList.remove("hidden");
+        showCatalog();
       } catch {
+        payload = null;
+        activeSecret = "";
         sessionStorage.removeItem(storageKey);
-        setError("That coach password did not work.");
+        setError("That password did not work.");
         unlock.classList.remove("hidden");
         app.classList.add("hidden");
         passwordInput.select();
       }
     }
 
-    function renderSharedResources(resources) {
-      const heading = document.createElement("h2");
-      heading.textContent = "Quick links";
-      const actions = document.createElement("div");
-      actions.className = "team-actions";
-      const drills = document.createElement("a");
-      drills.className = "team-link";
-      drills.textContent = "Drill catalog";
-      const drillsUrl = new URL("drills/", location.href);
-      drillsUrl.hash = encodeURIComponent(activeSecret);
-      drills.href = drillsUrl.href;
-      actions.append(drills);
-      for (const resource of resources) {
-        actions.append(createExternalLink(resource));
+    async function decryptAnyPayload(secret) {
+      const envelopes = await Promise.all(payloadFiles.map(async (file) => {
+        const response = await fetch(file, { cache: "no-store" });
+        if (!response.ok) throw new Error("Unable to load drills.");
+        return response.json();
+      }));
+      for (const envelope of envelopes) {
+        try {
+          return await decryptPayload(envelope, secret);
+        } catch {}
       }
-      sharedResources.replaceChildren(heading, actions);
+      throw new Error("No drill bundle accepted that password.");
     }
 
-    function renderTeams(teams) {
-      const cards = teams.map((team) => {
-        const card = document.createElement("article");
-        card.className = "card team-card";
-        card.dataset.team = team.slug;
-        card.style.setProperty("--team-border-light", team.borderLight);
-        card.style.setProperty("--team-border-dark", team.borderDark);
-        card.style.setProperty("--team-logo-surface-light", team.logoSurfaceLight);
-        card.style.setProperty("--team-logo-surface-dark", team.logoSurfaceDark);
-
-        const headingRow = document.createElement("div");
-        headingRow.className = "team-heading";
-        const logoLink = createTeamLink("", team, "");
-        logoLink.className = "team-logo-link";
-        logoLink.setAttribute("aria-label", `${team.name} home`);
-        logoLink.title = `${team.name} home`;
-        const logo = document.createElement("img");
-        logo.className = "team-logo";
-        logo.src = team.logo;
-        logo.alt = `${team.name} logo`;
-        logoLink.append(logo);
-        const heading = document.createElement("h2");
-        heading.textContent = team.name;
-        headingRow.append(logoLink, heading);
-        const detail = document.createElement("p");
-        detail.textContent = team.latestPlan
-          ? `Latest plan: Week ${team.latestPlan.week}, ${team.latestPlan.year}`
-          : "No weekly plans are available yet.";
-        const actions = document.createElement("div");
-        actions.className = "team-actions";
-        actions.append(createTeamLink("Latest practice plan", team, team.latestPlan?.id || ""));
-        for (const resource of team.resources) {
-          actions.append(createExternalLink(resource));
-        }
-        card.append(headingRow, detail, actions);
-        return card;
-      });
-      teamsContainer.replaceChildren(...cards);
+    function showCatalog() {
+      catalogButton.classList.add("hidden");
+      pageTitle.textContent = "Soccer drills";
+      document.title = "Soccer drill catalog";
+      renderDocument(payload.catalogId, false);
     }
 
-    function createTeamLink(label, team, planId) {
-      const link = document.createElement("a");
-      link.className = "team-link";
-      link.textContent = label;
-      const url = new URL(`${team.slug}/`, location.href);
-      if (planId) url.searchParams.set("plan", planId);
-      url.hash = encodeURIComponent(team.secret);
-      link.href = url.href;
-      if (!planId && label && !team.latestPlan) {
-        link.classList.add("hidden");
+    function showDocument(id, anchor = "") {
+      catalogButton.classList.remove("hidden");
+      renderDocument(id, true, anchor);
+    }
+
+    function renderDocument(id, updateTitle, anchor = "") {
+      const documentData = payload.documents[id];
+      if (!documentData) return;
+      if (updateTitle) {
+        pageTitle.textContent = documentData.title;
+        document.title = `${documentData.title} - Soccer drills`;
       }
-      return link;
-    }
-
-    function createExternalLink(resource) {
-      const link = document.createElement("a");
-      link.className = "team-link";
-      link.textContent = resource.label;
-      link.href = resource.url;
-      link.target = "_blank";
-      link.rel = "noreferrer";
-      return link;
+      const article = document.createElement("article");
+      article.className = "card document";
+      article.innerHTML = documentData.html;
+      if (updateTitle) article.querySelector("h1")?.remove();
+      content.replaceChildren(article);
+      if (anchor) {
+        requestAnimationFrame(() => document.getElementById(anchor)?.scrollIntoView());
+      } else {
+        window.scrollTo({ top: 0 });
+      }
     }
 
     function toggleTheme() {
