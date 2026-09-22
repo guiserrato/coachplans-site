@@ -169,6 +169,22 @@
     .secondary:disabled { cursor: default; opacity: 0.42; }
     .header-actions { display: flex; align-items: center; gap: 8px; }
     .week-navigation { display: flex; gap: 8px; }
+    .practice-navigation {
+      display: flex;
+      gap: 8px;
+      margin: 0 0 16px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+    .practice-navigation .secondary {
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+    .practice-navigation [aria-current="page"] {
+      color: var(--cp-team-on-frame);
+      background: var(--cp-team-frame);
+      border-color: var(--cp-team-border);
+    }
     .error { min-height: 24px; color: var(--cp-danger); margin-top: 12px; }
     .muted { color: var(--cp-text-muted); }
     .year { margin: 28px 0 12px; font-size: 1.15rem; }
@@ -274,6 +290,7 @@
           <button id="next-button" class="secondary icon-button" type="button" aria-label="Next week" title="Next week">→</button>
         </nav>
       </header>
+      <nav id="practice-navigation" class="practice-navigation hidden" aria-label="Practice day navigation"></nav>
       <div id="content"></div>
     </section>
   </main>
@@ -287,6 +304,7 @@
     const error = document.getElementById("error");
     const content = document.getElementById("content");
     const weekNavigation = document.getElementById("week-navigation");
+    const practiceNavigation = document.getElementById("practice-navigation");
     const homeButton = document.getElementById("home-button");
     const previousButton = document.getElementById("previous-button");
     const nextButton = document.getElementById("next-button");
@@ -344,8 +362,9 @@
         unlock.classList.add("hidden");
         app.classList.remove("hidden");
         const requestedPlan = new URLSearchParams(location.search).get("plan");
+        const requestedPractice = new URLSearchParams(location.search).get("practice") || "";
         if (requestedPlan && payload.plans.some((plan) => plan.id === requestedPlan)) {
-          await showDocument(requestedPlan);
+          await showDocument(requestedPlan, "", requestedPractice);
         } else {
           showHome();
         }
@@ -363,9 +382,11 @@
     function showHome() {
       activePlanId = "";
       weekNavigation.classList.add("hidden");
+      practiceNavigation.classList.add("hidden");
+      practiceNavigation.replaceChildren();
       document.getElementById("team-name").textContent = payload.team.name;
       document.title = `${payload.team.name} practice plans`;
-      setPlanQuery("");
+      setPlanQuery("", "");
       const wrapper = document.createElement("div");
       wrapper.append(createResources());
       const years = new Map();
@@ -425,12 +446,14 @@
       return section;
     }
 
-    async function showDocument(id, anchor = "") {
+    async function showDocument(id, anchor = "", requestedPractice = "") {
       const metadata = payload.documents[id];
       if (!metadata) return;
       const plan = payload.plans.find((candidate) => candidate.id === id);
       activePlanId = plan ? id : "";
       weekNavigation.classList.remove("hidden");
+      practiceNavigation.classList.add("hidden");
+      practiceNavigation.replaceChildren();
       previousButton.classList.toggle("hidden", !plan);
       nextButton.classList.toggle("hidden", !plan);
       const pageTitle = plan
@@ -441,7 +464,7 @@
         ? `${payload.team.name} - Week ${plan.week} practice plans`
         : `${metadata.title} - ${payload.team.name}`;
       updateWeekNavigation();
-      setPlanQuery(plan ? id : "");
+      setPlanQuery(plan ? id : "", "");
       content.innerHTML = '<div class="card muted">Loading plan...</div>';
       try {
         const encrypted = await fetchEncrypted(metadata.file, "plan");
@@ -449,9 +472,23 @@
         if (documentData.id !== id) throw new Error("The encrypted plan did not match its link.");
         const article = document.createElement("article");
         article.className = "card document";
-        article.innerHTML = documentData.html;
-        if (plan) article.querySelector("h1")?.remove();
-        content.replaceChildren(article);
+        if (plan) {
+          const practices = splitPlanHtml(documentData.html);
+          const practice =
+            practices.find((candidate) => candidate.id === requestedPractice) ||
+            practices[0];
+          if (practice) {
+            renderPracticePage(plan, documentData, practices, practice, article);
+          } else {
+            article.innerHTML = documentData.html;
+            article.querySelector("h1")?.remove();
+            content.replaceChildren(article);
+            setPlanQuery(id, "");
+          }
+        } else {
+          article.innerHTML = documentData.html;
+          content.replaceChildren(article);
+        }
         if (anchor) {
           requestAnimationFrame(() => document.getElementById(anchor)?.scrollIntoView());
         } else {
@@ -464,6 +501,94 @@
         message.textContent = "This plan could not be loaded. Return to the team home page and try again.";
         content.replaceChildren(message);
       }
+    }
+
+    function splitPlanHtml(html) {
+      const template = document.createElement("template");
+      template.innerHTML = html;
+      const nodes = [...template.content.children];
+      const coachNotesIndex = nodes.findIndex(
+        (node) =>
+          node.tagName === "H2" &&
+          node.textContent.trim().toLowerCase() === "coach notes",
+      );
+      const practiceIndexes = nodes
+        .map((node, index) => ({ node, index }))
+        .filter(
+          ({ node, index }) =>
+            node.tagName === "H2" &&
+            index !== coachNotesIndex,
+        )
+        .map(({ index }) => index);
+      if (!practiceIndexes.length) return [];
+
+      const overviewNodes = nodes.slice(0, practiceIndexes[0]);
+      const coachNotesNodes =
+        coachNotesIndex >= 0 ? nodes.slice(coachNotesIndex) : [];
+
+      return practiceIndexes.map((startIndex, practiceIndex) => {
+        const nextPracticeIndex = practiceIndexes[practiceIndex + 1] ?? nodes.length;
+        const endIndex =
+          coachNotesIndex >= 0 && coachNotesIndex > startIndex
+            ? Math.min(nextPracticeIndex, coachNotesIndex)
+            : nextPracticeIndex;
+        const title = nodes[startIndex].textContent.trim();
+        const wrapper = document.createElement("div");
+        for (const node of overviewNodes) wrapper.append(node.cloneNode(true));
+        for (const node of nodes.slice(startIndex, endIndex)) {
+          wrapper.append(node.cloneNode(true));
+        }
+        for (const node of coachNotesNodes) wrapper.append(node.cloneNode(true));
+        return {
+          id: createPracticeId(title, practiceIndex),
+          title,
+          html: wrapper.innerHTML,
+        };
+      });
+    }
+
+    function createPracticeId(title, index) {
+      const slug = title
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+      return `${index + 1}-${slug || "practice"}`;
+    }
+
+    function renderPracticePage(plan, documentData, practices, practice, article) {
+      article.innerHTML = practice.html;
+      article.querySelector("h1")?.remove();
+      content.replaceChildren(article);
+
+      const pageTitle = `${payload.team.name} · Week ${plan.week} · ${practice.title}`;
+      document.getElementById("team-name").textContent = pageTitle;
+      document.title = `${payload.team.name} - Week ${plan.week} - ${practice.title}`;
+      setPlanQuery(plan.id, practice.id);
+
+      practiceNavigation.replaceChildren();
+      if (practices.length <= 1) {
+        practiceNavigation.classList.add("hidden");
+        return;
+      }
+      for (const candidate of practices) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "secondary";
+        button.textContent = candidate.title;
+        if (candidate.id === practice.id) {
+          button.setAttribute("aria-current", "page");
+        }
+        button.addEventListener("click", () => {
+          const nextArticle = document.createElement("article");
+          nextArticle.className = "card document";
+          renderPracticePage(plan, documentData, practices, candidate, nextArticle);
+          window.scrollTo({ top: 0 });
+        });
+        practiceNavigation.append(button);
+      }
+      practiceNavigation.classList.remove("hidden");
     }
 
     function showAdjacentPlan(offset) {
@@ -480,12 +605,17 @@
       nextButton.disabled = index < 0 || index >= plans.length - 1;
     }
 
-    function setPlanQuery(planId) {
+    function setPlanQuery(planId, practiceId = "") {
       const url = new URL(location.href);
       if (planId) {
         url.searchParams.set("plan", planId);
       } else {
         url.searchParams.delete("plan");
+      }
+      if (planId && practiceId) {
+        url.searchParams.set("practice", practiceId);
+      } else {
+        url.searchParams.delete("practice");
       }
       history.replaceState(null, "", url.pathname + url.search);
     }
