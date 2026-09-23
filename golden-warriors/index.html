@@ -230,6 +230,28 @@
     .document h1 { margin-top: 0; line-height: 1.2; }
     .document h2 { margin-top: 2rem; padding-bottom: 6px; border-bottom: 1px solid var(--cp-border); }
     .document h3 { margin-top: 1.5rem; }
+    .day-schedule {
+      padding: 12px 16px;
+      background: var(--cp-surface-soft);
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+    }
+    .document .day-schedule h2 {
+      margin: 0 0 8px;
+      padding: 0;
+      border: 0;
+      font-size: 1.1rem;
+    }
+    .day-schedule ul { margin: 0; padding: 0; list-style: none; }
+    .day-schedule a {
+      display: flex;
+      gap: 12px;
+      padding: 4px 0;
+      text-decoration: none;
+    }
+    .day-schedule a:hover, .day-schedule a:focus-visible { text-decoration: underline; }
+    .schedule-time { min-width: 3.25rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+    .document h3[id^="practice-activity-"] { scroll-margin-top: 2rem; }
     .document img {
       display: block;
       max-width: 100%;
@@ -257,6 +279,7 @@
       .week-navigation { width: 100%; order: 3; }
       .week-navigation .secondary { flex: 1; padding-inline: 8px; }
       .card { padding: 18px; }
+      .document h3[id^="practice-activity-"] { scroll-margin-top: 10rem; }
     }
   </style>
 </head>
@@ -323,6 +346,12 @@
     nextButton.addEventListener("click", () => showAdjacentPlan(1));
     themeButton.addEventListener("click", toggleTheme);
     content.addEventListener("click", (event) => {
+      const activityLink = event.target.closest("[data-activity]");
+      if (activityLink) {
+        event.preventDefault();
+        content.querySelector(`#${activityLink.dataset.activity}`)?.scrollIntoView({ block: "start" });
+        return;
+      }
       const documentLink = event.target.closest("[data-doc]");
       if (documentLink) {
         event.preventDefault();
@@ -560,6 +589,8 @@
     function renderPracticePage(plan, documentData, practices, practice, article) {
       article.innerHTML = practice.html;
       article.querySelector("h1")?.remove();
+      const schedule = createDaySchedule(article);
+      if (schedule) article.prepend(schedule);
       content.replaceChildren(article);
 
       const pageTitle = `${payload.team.name} · Week ${plan.week} · ${practice.title}`;
@@ -589,6 +620,44 @@
         practiceNavigation.append(button);
       }
       practiceNavigation.classList.remove("hidden");
+    }
+
+    function createDaySchedule(article) {
+      const practiceHeading = article.querySelector("h2");
+      if (!practiceHeading) return null;
+      const schedule = document.createElement("nav");
+      schedule.className = "day-schedule";
+      schedule.setAttribute("aria-label", "Practice schedule");
+      const title = document.createElement("h2");
+      title.textContent = "Practice schedule";
+      const list = document.createElement("ul");
+      let index = 0;
+      for (
+        let heading = practiceHeading.nextElementSibling;
+        heading && heading.tagName !== "H2";
+        heading = heading.nextElementSibling
+      ) {
+        if (heading.tagName !== "H3") continue;
+        const match = heading.textContent.trim().match(/^(\d{1,2}:\d{2})(?:\s*[-–—]\s*|\s+)(.+)$/);
+        if (!match) continue;
+        const id = `practice-activity-${++index}`;
+        heading.id = id;
+        const link = document.createElement("a");
+        link.href = `#${id}`;
+        link.dataset.activity = id;
+        const time = document.createElement("span");
+        time.className = "schedule-time";
+        time.textContent = match[1];
+        const activity = document.createElement("span");
+        activity.textContent = match[2].trim();
+        link.append(time, activity);
+        const item = document.createElement("li");
+        item.append(link);
+        list.append(item);
+      }
+      if (!index) return null;
+      schedule.append(title, list);
+      return schedule;
     }
 
     function showAdjacentPlan(offset) {
