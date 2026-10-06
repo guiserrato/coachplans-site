@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive">
   <title>Panthers practice plans</title>
+  <meta name="theme-color" content="#111111">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Panthers Plans">
   <script>
     (() => {
       const param = new URLSearchParams(window.location.search).get("scoutTheme");
@@ -17,6 +20,9 @@
       document.documentElement.setAttribute("data-theme", theme);
     })();
   </script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
     :root {
       color-scheme: light;
@@ -299,6 +305,7 @@
     </section>
 
     <section id="app" class="hidden">
+      <div id="offline-status" class="error hidden" role="status"></div>
       <header class="topbar">
         <span class="team-logo-tile">
           <img id="team-logo" class="team-logo hidden" alt="Panthers logo">
@@ -333,6 +340,7 @@
     const nextButton = document.getElementById("next-button");
     const themeButton = document.getElementById("theme-button");
     const teamLogo = document.getElementById("team-logo");
+    const offlineStatus = document.getElementById("offline-status");
     let payload = null;
     let activeSecret = "";
     let activePlanId = "";
@@ -363,6 +371,16 @@
     });
 
     updateThemeButton();
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js").catch((registrationError) => {
+        console.error("Unable to enable offline plans:", registrationError);
+        offlineStatus.textContent = "Offline plans are unavailable on this device.";
+        offlineStatus.classList.remove("hidden");
+      });
+    } else {
+      offlineStatus.textContent = "Offline plans are unavailable on this device.";
+      offlineStatus.classList.remove("hidden");
+    }
     start();
 
     async function start() {
@@ -460,6 +478,10 @@
       const drillsUrl = new URL("../drills/", location.href);
       drillsUrl.hash = encodeURIComponent(activeSecret);
       drills.href = drillsUrl.href;
+      if (window.matchMedia("(display-mode: standalone)").matches || navigator.standalone) {
+        drills.target = "_blank";
+        drills.rel = "noreferrer";
+      }
       links.append(drills);
 
       for (const resource of payload.team.resources) {
