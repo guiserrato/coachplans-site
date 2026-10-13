@@ -300,9 +300,9 @@
           <input id="password" type="password" autocomplete="current-password" required>
         </label>
         <button class="primary" type="submit">View plans</button>
-        <div id="error" class="error" role="alert"></div>
       </form>
     </section>
+    <div id="error" class="error" role="alert" hidden></div>
 
     <section id="app" class="hidden">
       <div id="offline-status" class="error hidden" role="status"></div>
@@ -326,7 +326,43 @@
   </main>
 
   <script>
+    function createCredentialStore(key, onError) {
+  function report(error) {
+    console.error("Unable to access the saved password:", error);
+    onError("Device storage is unavailable. You may need to enter the password again when you reopen this app.");
+  }
+
+  return {
+    read() {
+      try {
+        return localStorage.getItem(key) || sessionStorage.getItem(key);
+      } catch (error) {
+        report(error);
+        return null;
+      }
+    },
+    save(secret) {
+      try {
+        localStorage.setItem(key, secret);
+        sessionStorage.removeItem(key);
+      } catch (error) {
+        report(error);
+      }
+    },
+    clear(secret) {
+      try {
+        for (const storage of [localStorage, sessionStorage]) {
+          if (storage.getItem(key) === secret) storage.removeItem(key);
+        }
+      } catch (error) {
+        report(error);
+      }
+    },
+  };
+}
+
     const storageKey = `coachplans:${location.pathname}:secret`;
+    const secretStore = createCredentialStore(storageKey, setError);
     const unlock = document.getElementById("unlock");
     const app = document.getElementById("app");
     const form = document.getElementById("unlock-form");
@@ -385,7 +421,7 @@
 
     async function start() {
       const fragmentSecret = decodeURIComponent(location.hash.slice(1));
-      const savedSecret = sessionStorage.getItem(storageKey);
+      const savedSecret = secretStore.read();
       const secret = fragmentSecret || savedSecret;
       if (!secret) {
         passwordInput.focus();
@@ -404,7 +440,7 @@
         const logo = await decryptPayload(encryptedLogo, secret);
         teamLogo.src = logo.dataUri;
         teamLogo.classList.remove("hidden");
-        sessionStorage.setItem(storageKey, secret);
+        secretStore.save(secret);
         if (removeFragment) history.replaceState(null, "", location.pathname + location.search);
         unlock.classList.add("hidden");
         app.classList.remove("hidden");
@@ -415,11 +451,16 @@
         } else {
           showHome();
         }
-      } catch {
+      } catch (unlockError) {
         payload = null;
         activeSecret = "";
-        sessionStorage.removeItem(storageKey);
-        setError("That team password did not work.");
+        console.error("Unable to unlock team plans:", unlockError);
+        if (unlockError.name === "OperationError") {
+          secretStore.clear(secret);
+          setError("That team password did not work.");
+        } else {
+          setError("Unable to load team plans. Check your connection and try again.");
+        }
         unlock.classList.remove("hidden");
         app.classList.add("hidden");
         passwordInput.select();
@@ -769,6 +810,7 @@
 
     function setError(message) {
       error.textContent = message;
+      error.hidden = !message;
     }
   </script>
 </body>
