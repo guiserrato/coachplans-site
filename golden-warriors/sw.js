@@ -1,4 +1,4 @@
-const CACHE = "coachplans-golden-warriors-774f0e5fb839d19a";
+const CACHE = "coachplans-golden-warriors-110f6e1963da3629";
 const FILES = ["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png","./apple-touch-icon.png","./payload.json","./content/team-logo.json","./content/784d3e98570154e82b147e92.json"];
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) =>

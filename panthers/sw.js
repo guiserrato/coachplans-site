@@ -1,4 +1,4 @@
-const CACHE = "coachplans-panthers-8b11fcd4cc045a94";
+const CACHE = "coachplans-panthers-3c91c25445e6ae71";
 const FILES = ["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png","./apple-touch-icon.png","./payload.json","./content/team-logo.json","./content/67316309327de7a282cfb810.json"];
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) =>
