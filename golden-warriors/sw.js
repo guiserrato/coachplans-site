@@ -1,5 +1,5 @@
-const CACHE = "coachplans-golden-warriors-267996d021634b55";
-const FILES = ["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png","./apple-touch-icon.png","./payload.json","./content/team-logo.json","./content/f5d6c525fca39c72490d1a03.json"];
+const CACHE = "coachplans-golden-warriors-952a3820e6cdc9df";
+const FILES = ["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png","./apple-touch-icon.png","./payload.json","./content/team-logo.json","./content/1553fde4666a54c71e028175.json"];
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) =>
     cache.addAll(FILES.map((file) => new Request(file, { cache: "reload" }))))
